@@ -105,14 +105,196 @@ javascriptconst prompt = `
 評価軸アピールVision「見えない疲れ」という普遍的課題。リモートワーク時代の孤独な働き方を変えるTechnology顔認識×時系列分析×生成AIの3層構造。プライバシー配慮設計Feasibilityブラウザだけで動く。デモで「自分の疲れ」をリアルタイム可視化
 
 
+## 技術的情報
 
+### 🛠️ アーキテクチャ
 
+#### フロントエンド
+- **Framework**: Next.js 14.2.14 (App Router)
+- **Language**: TypeScript
+- **UI Library**: React 18.3.1
+- **Styling**: Tailwind CSS
+- **Features**: ダークモード対応、レスポンシブデザイン
 
-## アイデア
+#### AI・機械学習
+- **顔検出**: face-api.js
+  - TinyFaceDetector による高速顔検出
+  - 68点顔ランドマーク検出
+  - リアルタイム表情認識
+- **AI対話**: Claude API (Anthropic)
+  - 疲労状態に応じたパーソナライズメッセージ生成
+  - 時系列データを考慮した文脈的回答
 
+#### データ処理
+- **MediaStream API**: WebRTC による高品質カメラアクセス
+- **リアルタイム分析**: 毎フレームでの顔特徴量抽出
+- **プライバシー保護**: 画像はローカル処理のみ、サーバーには数値データのみ送信
 
-## 開発終了
+### 📊 疲労度分析アルゴリズム
 
-15:30まで
-17:00までaiでスライドを作る
+#### 1. 多次元メトリクス
+```typescript
+interface FatigueMetrics {
+  eyeAspectRatio: number;        // 目の開き具合 (EAR)
+  mouthCurveRatio: number;       // 口角の位置
+  eyebrowPosition: number;       // 眉の位置
+  blinkFrequency: number;        // まばたき頻度
+  headPose: {                    // 頭部姿勢
+    pitch: number; yaw: number; roll: number;
+  };
+  expressionScores: {            // 表情スコア
+    happy: number; sad: number; neutral: number;
+    surprised: number; angry: number; fearful: number;
+    disgusted: number;
+  };
+  microSleepEvents: number;      // 微睡イベント数
+  attentionLevel: number;        // 注意レベル (0-100%)
+  stressLevel: number;          // ストレスレベル (0-100%)
+  fatigueScore: number;         // 総合疲労スコア (0-100%)
+  confidenceLevel: number;      // 信頼度
+  trend: 'improving' | 'stable' | 'declining'; // トレンド
+}
+```
+
+#### 2. EAR (Eye Aspect Ratio) 計算
+```javascript
+// EAR = (|P2-P6| + |P3-P5|) / (2 * |P1-P4|)
+calculateEAR(landmarks) {
+  const leftEye = landmarks.getLeftEye();
+  const rightEye = landmarks.getRightEye();
+  
+  // 各目のEARを計算
+  const leftEAR = this.calculateSingleEyeEAR(leftEye);
+  const rightEAR = this.calculateSingleEyeEAR(rightEye);
+  
+  return (leftEAR + rightEAR) / 2;
+}
+
+calculateSingleEyeEAR(eyePoints) {
+  const vertical1 = distance(eyePoints[1], eyePoints[5]);
+  const vertical2 = distance(eyePoints[2], eyePoints[4]);
+  const horizontal = distance(eyePoints[0], eyePoints[3]);
+  
+  return (vertical1 + vertical2) / (2 * horizontal);
+}
+```
+
+#### 3. 疲労度スコア統合アルゴリズム
+```javascript
+calculateFatigueScore(metrics) {
+  let score = 0;
+  
+  // 各要素の重み付け合計 (8次元分析)
+  score += Math.max(0, (baseline.EAR - current.EAR) * 80);     // 20%
+  score += mouthChange * 40;                                   // 10%
+  score += eyebrowChange * 25;                                 // 8%
+  score += blinkChange * 1.5;                                  // 7%
+  score += microSleepScore;                                    // 15%
+  score += attentionDeficit * 0.3;                            // 20%
+  score += headPoseInstability * 0.8;                         // 10%
+  score += expressionFatigue * 0.2;                           // 10%
+  
+  // トレンド補正
+  score *= trendMultiplier; // declining: 1.3x, improving: 0.7x
+  
+  // 信頼度補正
+  score *= (confidenceLevel / 100);
+  
+  return Math.min(100, Math.max(0, score));
+}
+```
+
+#### 4. ストレスレベル検出
+```javascript
+calculateStressLevel(expressions, metrics) {
+  let stressScore = 25; // ベースライン
+  
+  // 多軸分析
+  // 1. 即時表情分析
+  stressScore += (angry + fearful + disgusted + sad) * 150;
+  
+  // 2. 表情変化率分析
+  if (expressionHistory.length >= 5) {
+    const emotionVariance = calculateEmotionVariance();
+    stressScore += emotionVariance * 60;
+  }
+  
+  // 3. 生理的指標
+  stressScore += blinkAbnormality * 2;
+  stressScore += EARAbnormality * 80;
+  
+  // 4. 頭部動作不安定性
+  stressScore += headMovementInstability * 1.2;
+  
+  // 5. 感情抑制兆候
+  if (neutral > 0.8) stressScore += (neutral - 0.8) * 50;
+  
+  // 6. 時系列トレンド増幅
+  if (isRisingTrend) stressScore *= 1.2;
+  
+  return Math.min(100, Math.max(5, stressScore));
+}
+```
+
+### 🎯 技術的特徴
+
+#### リアルタイム処理
+- **60FPS対応**: 毎フレーム分析による即座の反応
+- **軽量化**: TinyFaceDetector使用で低負荷
+- **バッファリング**: 過去データを活用した安定性向上
+
+#### 時系列分析
+- **履歴管理**: 50回分のメトリクス履歴保持
+- **トレンド検出**: 改善・安定・悪化の3段階判定
+- **ベースライン学習**: 個人差に対応した動的基準値設定
+
+#### プライバシー設計
+- **ローカル処理**: 顔画像はブラウザ内で処理
+- **最小データ**: 数値メトリクスのみサーバー送信
+- **透明性**: 処理内容をリアルタイム表示
+
+### 🚀 パフォーマンス最適化
+
+#### フロントエンド
+- **Next.js最適化**: App Router使用によるページ分割
+- **TypeScript**: 型安全性による実行時エラー防止
+- **React Hooks**: useCallback, useMemoによる再レンダリング最適化
+
+#### カメラ処理
+- **Ref Callback**: 確実なビデオ要素アクセス
+- **フォールバック戦略**: 複数のタイミングでストリーム初期化
+- **エラーハンドリング**: カメラアクセス失敗時の適切な処理
+
+### 🔧 開発・デプロイ
+
+#### 開発環境
+```bash
+npm run dev    # 開発サーバー起動
+npm run build  # プロダクションビルド
+npm run lint   # コード品質チェック
+npm run type-check # TypeScript型チェック
+```
+
+#### 環境変数
+```env
+ANTHROPIC_API_KEY=your_claude_api_key
+NODE_ENV=development|production
+```
+
+#### デプロイ要件
+- **HTTPS必須**: カメラアクセスにはセキュア接続が必要
+- **モダンブラウザ**: WebRTC, MediaStream API対応
+- **十分なメモリ**: 顔認識処理のため最低4GB推奨
+
+### 📈 将来の拡張性
+
+#### 機能拡張
+- **音声解析**: 音声による感情・疲労検出
+- **生体センサー**: ウェアラブルデバイス連携
+- **チーム機能**: グループでの疲労状況共有
+
+#### 技術拡張
+- **エッジAI**: WebAssemblyによる高速化
+- **リアルタイム通信**: WebSocketによるチーム連携
+- **データ分析**: 長期傾向分析とレポート生成
 
