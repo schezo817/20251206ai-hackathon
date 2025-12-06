@@ -14,6 +14,7 @@ export default function FatigueCareApp() {
   
   const { 
     videoRef, 
+    videoElement,
     isStreaming, 
     error: webcamError, 
     startStream, 
@@ -31,9 +32,11 @@ export default function FatigueCareApp() {
 
   const handleStartSession = async () => {
     try {
+      console.log('Starting camera session...');
       await startStream();
       setSessionStartTime(new Date());
       setIsAppStarted(true);
+      console.log('Camera session started successfully');
     } catch (error) {
       console.error('Failed to start session:', error);
     }
@@ -47,10 +50,32 @@ export default function FatigueCareApp() {
   };
 
   useEffect(() => {
-    if (isStreaming && videoRef.current && isModelLoaded) {
-      startDetection(videoRef.current);
+    console.log('=== MAIN COMPONENT STATE ===');
+    console.log('isModelLoaded:', isModelLoaded);
+    console.log('isAppStarted:', isAppStarted);
+    console.log('isStreaming:', isStreaming);
+    console.log('isDetecting:', isDetecting);
+    console.log('videoElement:', !!videoElement);
+    console.log('webcamError:', webcamError);
+    console.log('detectionError:', detectionError);
+    
+    if (videoElement) {
+      console.log('Video element details:', {
+        readyState: videoElement.readyState,
+        paused: videoElement.paused,
+        srcObject: !!videoElement.srcObject,
+        videoWidth: videoElement.videoWidth,
+        videoHeight: videoElement.videoHeight
+      });
     }
-  }, [isStreaming, isModelLoaded, startDetection, videoRef]);
+  }, [isModelLoaded, isAppStarted, isStreaming, isDetecting, webcamError, detectionError, videoElement]);
+
+  useEffect(() => {
+    if (isStreaming && videoElement && isModelLoaded) {
+      console.log('Starting face detection...');
+      startDetection(videoElement);
+    }
+  }, [isStreaming, isModelLoaded, startDetection, videoElement]);
 
   useEffect(() => {
     return () => {
@@ -153,10 +178,11 @@ export default function FatigueCareApp() {
           </div>
         )}
 
+
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
           <div className="xl:col-span-2">
             <VideoDisplay 
-              ref={videoRef}
+              videoRef={videoRef}
               isStreaming={isStreaming}
               error={webcamError}
             />
