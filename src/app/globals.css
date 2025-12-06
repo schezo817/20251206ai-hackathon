@@ -14,9 +14,9 @@
   --bg-primary: #111827;
   --bg-secondary: #1f2937;
   --bg-tertiary: #374151;
-  --text-primary: #f9fafb;
-  --text-secondary: #d1d5db;
-  --text-tertiary: #9ca3af;
+  --text-primary: #ffffff;
+  --text-secondary: #f9fafb;
+  --text-tertiary: #e5e7eb;
   --border-color: #374151;
   --shadow-color: rgba(0, 0, 0, 0.3);
 }
@@ -238,28 +238,64 @@ body {
   color: #111827;
 }
 
+.dark .text-gray-900 {
+  color: #ffffff;
+}
+
 .text-gray-800 {
   color: #1f2937;
+}
+
+.dark .text-gray-800 {
+  color: #ffffff;
 }
 
 .text-gray-600 {
   color: #4b5563;
 }
 
+.dark .text-gray-600 {
+  color: #f3f4f6;
+}
+
 .text-gray-500 {
   color: #6b7280;
+}
+
+.dark .text-gray-500 {
+  color: #e5e7eb;
 }
 
 .text-gray-400 {
   color: #9ca3af;
 }
 
+.dark .text-gray-400 {
+  color: #e5e7eb;
+}
+
 .text-gray-300 {
   color: #d1d5db;
 }
 
+.dark .text-gray-300 {
+  color: #f9fafb;
+}
+
 .text-white {
   color: white;
+}
+
+.dark .text-white {
+  color: white;
+}
+
+.text-gray-700 {
+  color: #374151;
+}
+
+.dark .text-gray-700 {
+  color: #f3f4f6;
 }
 
 .text-blue-600 {
