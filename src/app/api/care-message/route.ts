@@ -8,6 +8,63 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
     }
 
+    // Gemini API呼び出し
+    const apiKey = process.env.GEMINI_API_KEY;
+    
+    
+    if (apiKey) {
+      try {
+        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `あなたは優しいAIケアアシスタントです。以下の疲労度情報に基づいて、短くて実用的なケアメッセージと3つの具体的な提案を日本語で返してください。
+
+${prompt}
+
+以下の形式でJSONを返してください：
+{
+  "message": "優しく親しみやすいケアメッセージ（1-2文）",
+  "suggestions": ["具体的な提案1", "具体的な提案2", "具体的な提案3"]
+}
+
+注意：
+- メッセージは親しみやすく、具体的で実行しやすい内容にする
+- 提案は即座に実行できる簡単なものにする
+- 健康的で科学的根拠のあるアドバイスを心がける`
+              }]
+            }]
+          })
+        });
+
+        if (geminiResponse.ok) {
+          const data = await geminiResponse.json();
+          const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          
+          if (generatedText) {
+            try {
+              // JSONを抽出（マークダウンのコードブロックを削除）
+              const jsonText = generatedText.replace(/```json\n?|```\n?/g, '').trim();
+              const parsedResponse = JSON.parse(jsonText);
+              
+              if (parsedResponse.message && parsedResponse.suggestions) {
+                return NextResponse.json(parsedResponse);
+              }
+            } catch (parseError) {
+              console.error('JSON parsing error:', parseError);
+            }
+          }
+        }
+      } catch (geminiError) {
+        console.error('Gemini API error:', geminiError);
+      }
+    }
+
+    // フォールバックメッセージ
     const fallbackMessages = [
       {
         message: '少し疲れが見えますね。深呼吸をして、短い休憩を取ってみませんか？',
@@ -28,7 +85,6 @@ export async function POST(request: NextRequest) {
     ];
 
     const randomMessage = fallbackMessages[Math.floor(Math.random() * fallbackMessages.length)];
-
     return NextResponse.json(randomMessage);
 
   } catch (error) {
