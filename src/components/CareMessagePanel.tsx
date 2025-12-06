@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { FatigueMetrics } from '@/lib/faceDetection';
 import { ClaudeCarePlanner, CareMessage, UserContext } from '@/lib/claude';
+import { SessionData, SessionSummary } from '@/types/session';
 
 interface CareMessagePanelProps {
   metrics: FatigueMetrics | null;
   isDetecting: boolean;
+  session?: SessionData | null;
+  sessionSummary?: SessionSummary | null;
 }
 
-export default function CareMessagePanel({ metrics, isDetecting }: CareMessagePanelProps) {
+export default function CareMessagePanel({ metrics, isDetecting, session, sessionSummary }: CareMessagePanelProps) {
   const [currentMessage, setCurrentMessage] = useState<CareMessage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [workStartTime] = useState(Date.now());
@@ -140,6 +143,109 @@ export default function CareMessagePanel({ metrics, isDetecting }: CareMessagePa
               <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
               <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // セッション完了時の特別表示
+  if (session?.status === 'completed' && sessionSummary) {
+    return (
+      <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-green-50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-green-900/20 rounded-3xl shadow-xl p-8 border border-green-200/50 dark:border-green-700/30">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl">
+            <div className="text-white text-2xl">🎉</div>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white">セッション完了！</h3>
+                <p className="text-green-600 dark:text-green-400 text-sm font-medium">1分間の計測が完了しました</p>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-gray-500 dark:text-gray-400">計測時間</div>
+                <div className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                  {sessionSummary.duration.toFixed(1)}分
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative bg-white/60 dark:bg-gray-800/60 rounded-2xl p-6 backdrop-blur-sm border border-white/50 dark:border-gray-600/50 shadow-inner">
+          <div className="space-y-6">
+            {/* セッション結果サマリー */}
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="text-2xl">📊</div>
+                <h4 className="text-lg font-semibold text-gray-800 dark:text-white">計測結果</h4>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-3 text-center">
+                  <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">平均疲労度</div>
+                  <div className="text-lg font-bold text-blue-800 dark:text-blue-200">
+                    {sessionSummary.stats.avgFatigueScore.toFixed(1)}%
+                  </div>
+                </div>
+                <div className="bg-red-50 dark:bg-red-900/30 rounded-xl p-3 text-center">
+                  <div className="text-xs text-red-600 dark:text-red-400 font-medium">最大疲労度</div>
+                  <div className="text-lg font-bold text-red-800 dark:text-red-200">
+                    {sessionSummary.stats.maxFatigueScore.toFixed(1)}%
+                  </div>
+                </div>
+                <div className="bg-purple-50 dark:bg-purple-900/30 rounded-xl p-3 text-center">
+                  <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">注意低下</div>
+                  <div className="text-lg font-bold text-purple-800 dark:text-purple-200">
+                    {sessionSummary.stats.attentionDropCount}回
+                  </div>
+                </div>
+                <div className="bg-orange-50 dark:bg-orange-900/30 rounded-xl p-3 text-center">
+                  <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">ストレスピーク</div>
+                  <div className="text-lg font-bold text-orange-800 dark:text-orange-200">
+                    {sessionSummary.stats.stressPeakCount}回
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* AIからの推奨事項 */}
+            {sessionSummary.recommendations.length > 0 && (
+              <div>
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="text-2xl">💡</div>
+                  <h4 className="text-lg font-semibold text-gray-800 dark:text-white">AIからの推奨事項</h4>
+                </div>
+                <div className="space-y-3">
+                  {sessionSummary.recommendations.map((recommendation, index) => (
+                    <div key={index} className="flex items-start space-x-3 bg-white/70 dark:bg-gray-700/70 rounded-xl p-4 backdrop-blur-sm border border-white/60 dark:border-gray-600/60">
+                      <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full mt-2 animate-pulse"></div>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex-1">{recommendation}</span>
+                      <div className="text-lg">✨</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 改善提案 */}
+            {sessionSummary.scoreImprovementSuggestions.length > 0 && (
+              <div>
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="text-2xl">🚀</div>
+                  <h4 className="text-lg font-semibold text-gray-800 dark:text-white">改善のヒント</h4>
+                </div>
+                <div className="space-y-2">
+                  {sessionSummary.scoreImprovementSuggestions.map((suggestion, index) => (
+                    <div key={index} className="flex items-center space-x-3 bg-green-50/70 dark:bg-green-900/30 rounded-lg p-3 backdrop-blur-sm">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-green-800 dark:text-green-200">{suggestion}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
