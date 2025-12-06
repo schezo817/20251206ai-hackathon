@@ -7,7 +7,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "slides": "slidev",
+    "slides:build": "slidev build",
+    "slides:export": "slidev export"
   },
   "keywords": [],
   "author": "",
@@ -24,5 +27,9 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@slidev/cli": "^0.48.9",
+    "@slidev/theme-default": "^0.24.0"
   }
 }
